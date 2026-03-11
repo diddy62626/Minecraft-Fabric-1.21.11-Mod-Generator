@@ -29,12 +29,13 @@ export async function POST(req: Request) {
           {
             role: 'system',
             content: "You are an expert Minecraft mod developer for Fabric 1.21.11. " +
-            "Generate additional Java code and resources based on the user's request. " +
+            "Generate additional Java code, resources (JSON models, textures, lang files) based on the user's request. " +
             "Your response must be a JSON object containing a 'files' array. " +
-            "Each file should have 'path' and 'content'. " +
+            "Each file should have 'path' and 'content'. For binary files like textures (.png), use base64 encoding and include an 'encoding': 'base64' field. " +
             `The base package is ${mavenGroup}.${modId}. ` +
-            "Do not include the base template files (build.gradle, fabric.mod.json, etc.). " +
+            "Do not include the base template files (build.gradle, fabric.mod.json, etc.) unless you are updating them. " +
             "Focus on requested features like Items, Blocks, Entities, or Logic. " +
+            "Ensure you generate the necessary JSON files in src/main/resources/assets/" + modId + "/models/item/ or /models/block/ etc. " +
             "Example: " +
             '{ "files": [ { "path": "src/main/java/com/example/mod/items/CustomItem.java", "content": "package com.example.mod.items; ..." } ] }'
           },
@@ -47,7 +48,8 @@ export async function POST(req: Request) {
         response_format: { type: 'json_object' },
       });
 
-      return NextResponse.json(JSON.parse(completion.choices[0].message.content || '{}'));
+      const responseData = JSON.parse(completion.choices[0].message.content || '{}');
+      return NextResponse.json(responseData);
     } catch (error: any) {
       console.error(`Failed with model ${model}:`, error);
       lastError = error;
