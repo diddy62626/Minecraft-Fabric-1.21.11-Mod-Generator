@@ -21,43 +21,46 @@ export async function POST(req: Request) {
     baseURL: 'https://api.groq.com/openai/v1',
   });
 
-  const systemPrompt = `You are an expert Minecraft mod developer for Fabric 1.21.11.
-Your task is to generate or modify Minecraft mod files based on the user's request.
+  const systemPrompt = `You are a world-class Minecraft Fabric 1.21.11 Mod Architect.
+Your goal is to manage the source code and resources for a mod project iteratively.
 
-Current Project Context:
-- Mod Name: ${modName}
-- Mod ID: ${modId}
-- Base Package: ${mavenGroup}.${modId}
+Project Info:
+- Name: ${modName}
+- ID: ${modId}
+- Package: ${mavenGroup}.${modId}
 
-Base Template Files (Already exist in the project):
+Project State:
+- Base Files (ReadOnly Templates):
 ${JSON.stringify(baseTemplates, null, 2)}
 
-Current Generated Files (If any):
+- Current Generated Files:
 ${JSON.stringify(currentFiles || [], null, 2)}
 
 Instructions:
-1. Generate additional Java code, resources (JSON models, blockstates, lang files), and textures.
-2. For textures (.png), you MUST generate a valid base64 string of a 16x16 or 32x32 PNG. Use the 'encoding': 'base64' field.
-3. Your response must be a JSON object containing a 'files' array.
-4. Each file object must have 'path' and 'content'. Optional: 'encoding': 'base64'.
-5. If the user asks to "change" something, return the UPDATED content for the file at the same path.
-6. Focus on ensuring all files are correctly placed in 'src/main/java/...' or 'src/main/resources/assets/${modId}/...'.
-7. Do not explain anything, only return the JSON.
+1. Analyze the user request and the current project state.
+2. Determine which files need to be ADDED, MODIFIED, or REMOVED to fulfill the request.
+3. You can generate Java code, JSON models, textures (base64 PNG), lang files, etc.
+4. For textures, generate high-quality 16x16 or 32x32 base64 PNGs.
+5. Your response MUST be a JSON object with two arrays: 'upsert' (files to add or update) and 'delete' (paths to remove).
 
-Example output:
+Response Schema:
 {
-  "files": [
+  "upsert": [
     {
-      "path": "src/main/resources/assets/${modId}/textures/item/custom_item.png",
-      "content": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9h...",
-      "encoding": "base64"
-    },
-    {
-      "path": "src/main/java/${mavenGroup.replace(/\./g, '/')}/${modId}/items/CustomItem.java",
-      "content": "package ${mavenGroup}.${modId}.items; ..."
+      "path": "string",
+      "content": "string",
+      "encoding": "utf-8" | "base64"
     }
-  ]
-}`;
+  ],
+  "delete": ["string"]
+}
+
+Rules:
+- Always use the correct Minecraft resource paths: src/main/resources/assets/${modId}/...
+- Always use the correct Java package paths: src/main/java/${mavenGroup.replace(/\./g, '/')}/${modId}/...
+- If you modify an existing file, provide the FULL new content.
+- Be precise with Java syntax and Fabric API 0.104.0+1.21.1 conventions.
+- DO NOT explain. Only return the JSON.`;
 
   let lastError = null;
   for (const model of MODELS) {
@@ -71,7 +74,7 @@ Example output:
         response_format: { type: 'json_object' },
       });
 
-      const responseData = JSON.parse(completion.choices[0].message.content || '{"files": []}');
+      const responseData = JSON.parse(completion.choices[0].message.content || '{"upsert": [], "delete": []}');
       return NextResponse.json(responseData);
     } catch (error: any) {
       console.error(`Failed with model ${model}:`, error);

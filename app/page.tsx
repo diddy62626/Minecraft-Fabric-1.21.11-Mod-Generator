@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { generateModZip } from '@/utils/generator';
 import { FABRIC_TEMPLATES } from '@/utils/templates';
-import { Download, Loader2, Hammer, Code, Zap, Settings, Book, Info, Plus, RotateCcw } from 'lucide-react';
+import { Download, Loader2, Hammer, Code, Zap, Settings, Book, Info, Plus, RotateCcw, Trash2, FileCode, ImageIcon } from 'lucide-react';
 
 interface ModFile {
   path: string;
@@ -28,7 +28,8 @@ export default function Home() {
     return [
       { path: 'build.gradle', content: FABRIC_TEMPLATES.buildGradle(modId, modVersion, mavenGroup) },
       { path: 'fabric.mod.json', content: FABRIC_TEMPLATES.fabricModJson(modId, modName, description, mavenGroup) },
-      { path: 'gradle.properties', content: FABRIC_TEMPLATES.gradleProperties(modId) }
+      { path: 'gradle.properties', content: FABRIC_TEMPLATES.gradleProperties(modId) },
+      { path: 'settings.gradle', content: FABRIC_TEMPLATES.settingsGradle }
     ];
   };
 
@@ -53,19 +54,28 @@ export default function Home() {
         throw new Error(data.error);
       }
 
-      // Merge or update files
-      const newFiles = [...generatedFiles];
-      if (data.files) {
-        data.files.forEach((file: ModFile) => {
-          const index = newFiles.findIndex(f => f.path === file.path);
-          if (index !== -1) {
-            newFiles[index] = file;
-          } else {
-            newFiles.push(file);
-          }
-        });
-      }
-      setGeneratedFiles(newFiles);
+      setGeneratedFiles(prev => {
+        let nextFiles = [...prev];
+
+        // Handle deletions
+        if (data.delete && Array.isArray(data.delete)) {
+          nextFiles = nextFiles.filter(f => !data.delete.includes(f.path));
+        }
+
+        // Handle upserts
+        if (data.upsert && Array.isArray(data.upsert)) {
+          data.upsert.forEach((file: ModFile) => {
+            const index = nextFiles.findIndex(f => f.path === file.path);
+            if (index !== -1) {
+              nextFiles[index] = file;
+            } else {
+              nextFiles.push(file);
+            }
+          });
+        }
+
+        return nextFiles;
+      });
 
     } catch (error: any) {
       alert('Error generating mod: ' + error.message);
@@ -91,7 +101,13 @@ export default function Home() {
   };
 
   const handleReset = () => {
-    setGeneratedFiles([]);
+    if (confirm('Are you sure you want to reset all generated files?')) {
+      setGeneratedFiles([]);
+    }
+  };
+
+  const removeFile = (path: string) => {
+    setGeneratedFiles(prev => prev.filter(f => f.path !== path));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -99,89 +115,60 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      <nav className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-orange-600 p-1.5 rounded-lg">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-orange-500/30">
+      <nav className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-br from-orange-500 to-orange-700 p-2 rounded-xl shadow-lg shadow-orange-900/20">
               <Hammer className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl tracking-tight">FabricGen</span>
+            <span className="font-black text-xl tracking-tighter uppercase">FabricGen</span>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
-            <a href="#" className="text-orange-500 underline underline-offset-8 decoration-2">Generator</a>
-            <a href="#" className="hover:text-zinc-200 transition-colors">Documentation</a>
+          <div className="hidden lg:flex items-center gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+            <a href="#" className="text-orange-500 border-b-2 border-orange-500 pb-1">Generator</a>
+            <a href="#" className="hover:text-zinc-200 transition-colors">Docs</a>
             <a href="#" className="hover:text-zinc-200 transition-colors">Examples</a>
-            <a href="#" className="hover:text-zinc-200 transition-colors">Support</a>
+            <a href="#" className="hover:text-zinc-200 transition-colors">GitHub</a>
           </div>
           <div className="flex items-center gap-4">
-             <button onClick={handleReset} className="p-2 text-zinc-400 hover:text-zinc-100" title="Reset Generation"><RotateCcw className="w-5 h-5" /></button>
-             <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700"></div>
+             <button onClick={handleReset} className="p-2 text-zinc-600 hover:text-orange-500 transition-colors" title="Reset Project"><RotateCcw className="w-5 h-5" /></button>
+             <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 font-bold text-xs">AI</div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <header className="mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-xs font-bold uppercase tracking-wider mb-4">
-            <Zap className="w-3 h-3" /> Minecraft 1.21.11 Supported
-          </div>
-          <h1 className="text-5xl font-black mb-4 tracking-tight leading-tight">
-            Iterative Mod <br />
-            <span className="text-zinc-500">Generator</span>
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-2xl">
-            Describe features step-by-step. The AI will generate code, JSON, and textures, and refine them as you go.
-          </p>
-        </header>
+      <main className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
+        <div className="lg:col-span-7 space-y-12">
+          <header>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-widest mb-6">
+              <Zap className="w-3 h-3 fill-orange-500" /> Minecraft 1.21.11 Ready
+            </div>
+            <h1 className="text-6xl font-black mb-6 tracking-tight leading-[0.9]">
+              Architect your <br />
+              <span className="text-zinc-800">perfect mod.</span>
+            </h1>
+            <p className="text-zinc-500 text-lg max-w-xl font-medium leading-relaxed">
+              Our Llama-3.3 engine automatically detects code structures, generates 32-bit textures, and manages your file system iteratively.
+            </p>
+          </header>
 
-        <div className="grid grid-cols-1 gap-12">
           <form onSubmit={handleSubmit} className="space-y-8">
-            <section className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-3xl">
-              <div className="flex items-center gap-2 mb-8 text-orange-500 uppercase text-xs font-black tracking-widest">
-                <Settings className="w-4 h-4" /> Project Settings
+            <section className="bg-zinc-900/20 border border-zinc-900 p-8 rounded-[2rem] space-y-8">
+              <div className="flex items-center gap-2 text-zinc-600 uppercase text-[10px] font-black tracking-widest">
+                <Settings className="w-4 h-4" /> Core Manifest
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <input
-                    type="text"
-                    name="modName"
-                    value={formData.modName}
-                    onChange={handleChange}
-                    placeholder="Mod Name"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 focus:ring-2 focus:ring-orange-600 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    name="modId"
-                    value={formData.modId}
-                    onChange={handleChange}
-                    placeholder="Mod ID"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 focus:ring-2 focus:ring-orange-600 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    name="mavenGroup"
-                    value={formData.mavenGroup}
-                    onChange={handleChange}
-                    placeholder="Maven Group"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 focus:ring-2 focus:ring-orange-600 outline-none transition-all"
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <input name="modName" value={formData.modName} onChange={handleChange} placeholder="Mod Name" className="col-span-2 bg-zinc-950 border border-zinc-900 rounded-2xl px-6 py-4 focus:ring-1 focus:ring-orange-500 outline-none transition-all font-bold placeholder:text-zinc-800" />
+                <input name="modId" value={formData.modId} onChange={handleChange} placeholder="mod_id" className="bg-zinc-950 border border-zinc-900 rounded-2xl px-6 py-4 focus:ring-1 focus:ring-orange-500 outline-none transition-all font-mono text-xs placeholder:text-zinc-800" />
+                <input name="mavenGroup" value={formData.mavenGroup} onChange={handleChange} placeholder="com.example" className="bg-zinc-950 border border-zinc-900 rounded-2xl px-6 py-4 focus:ring-1 focus:ring-orange-500 outline-none transition-all font-mono text-xs placeholder:text-zinc-800" />
               </div>
             </section>
 
-            <section className="space-y-4">
+            <section className="space-y-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-orange-500 uppercase text-xs font-black tracking-widest">
-                  <Plus className="w-4 h-4" /> Add or Modify Features
+                <div className="flex items-center gap-2 text-orange-500 uppercase text-[10px] font-black tracking-widest">
+                  <Code className="w-4 h-4" /> Feature Architect
                 </div>
-                <div className="text-[10px] text-zinc-500">FILES GENERATED: {generatedFiles.length}</div>
               </div>
 
               <div className="relative group">
@@ -189,9 +176,9 @@ export default function Home() {
                   name="prompt"
                   value={formData.prompt}
                   onChange={handleChange}
-                  rows={4}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-6 focus:ring-2 focus:ring-orange-600 outline-none transition-all resize-none font-mono text-sm leading-relaxed"
-                  placeholder="Ask for new features or changes to existing ones..."
+                  rows={5}
+                  className="w-full bg-zinc-900 border border-zinc-900 rounded-[2rem] px-8 py-8 focus:ring-2 focus:ring-orange-600/20 outline-none transition-all resize-none font-medium text-lg leading-relaxed placeholder:text-zinc-800"
+                  placeholder="Ask to add items, blocks, logic, or textures..."
                   required
                 />
               </div>
@@ -200,14 +187,14 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-zinc-100 hover:bg-white text-zinc-950 font-black py-4 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50"
+                  className="flex-[2] bg-zinc-100 hover:bg-white text-zinc-950 font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50"
                 >
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
                   ) : (
                     <>
-                      <Zap className="w-5 h-5" />
-                      GENERATE / UPDATE
+                      <Zap className="w-5 h-5 fill-current" />
+                      BUILD ITERATION
                     </>
                   )}
                 </button>
@@ -216,39 +203,89 @@ export default function Home() {
                   type="button"
                   onClick={handleDownload}
                   disabled={generatedFiles.length === 0}
-                  className="bg-orange-600 hover:bg-orange-500 text-white font-black py-4 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-800"
+                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-900"
                 >
                   <Download className="w-5 h-5" />
-                  DOWNLOAD ZIP
+                  EXPORT
                 </button>
               </div>
             </section>
           </form>
+        </div>
 
-          {generatedFiles.length > 0 && (
-            <section className="bg-zinc-900/20 border border-zinc-800 p-8 rounded-3xl">
-               <div className="flex items-center gap-2 mb-6 text-zinc-500 uppercase text-xs font-black tracking-widest">
-                <Code className="w-4 h-4" /> File Overview
-              </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {generatedFiles.map((file, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 px-4 bg-zinc-900 rounded-lg text-xs font-mono border border-zinc-800/50">
-                    <span className="text-zinc-400 truncate mr-4">{file.path}</span>
-                    <span className="text-orange-500/50 uppercase text-[8px] font-bold">{file.encoding === 'base64' ? 'Texture' : 'Code'}</span>
+        <div className="lg:col-span-5 space-y-8">
+           <div className="sticky top-32">
+              <div className="bg-zinc-900/20 border border-zinc-900 rounded-[2.5rem] p-10 space-y-8">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-600">File System</h3>
+                    <div className="bg-zinc-950 border border-zinc-900 px-3 py-1 rounded-full text-[10px] font-black text-orange-500">{generatedFiles.length} ACTIVE</div>
                   </div>
-                ))}
+
+                  {generatedFiles.length === 0 ? (
+                    <div className="py-20 text-center space-y-4">
+                      <div className="w-16 h-16 bg-zinc-950 border border-zinc-900 rounded-3xl mx-auto flex items-center justify-center">
+                        <FileCode className="w-6 h-6 text-zinc-800" />
+                      </div>
+                      <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">No files architected yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
+                      {generatedFiles.map((file, i) => (
+                        <div key={i} className="group flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl transition-all hover:border-zinc-800">
+                          <div className="flex items-center gap-4 truncate">
+                            {file.encoding === 'base64' ? <ImageIcon className="w-4 h-4 text-orange-500/50" /> : <FileCode className="w-4 h-4 text-blue-500/50" />}
+                            <div className="flex flex-col truncate">
+                              <span className="text-[11px] font-bold text-zinc-300 truncate">{file.path.split('/').pop()}</span>
+                              <span className="text-[9px] text-zinc-600 truncate uppercase tracking-tighter">{file.path.replace(/\/[^/]+$/, '')}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => removeFile(file.path)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-700 hover:text-red-500 transition-all">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="pt-6 border-t border-zinc-900">
+                    <div className="flex items-center gap-4 p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
+                      <Info className="w-4 h-4 text-orange-500" />
+                      <p className="text-[9px] font-medium text-zinc-500 leading-normal">
+                        Click <span className="text-orange-500">EXPORT</span> to generate a production-ready Gradle project for IntelliJ/VS Code.
+                      </p>
+                    </div>
+                  </div>
               </div>
-            </section>
-          )}
+           </div>
         </div>
       </main>
 
-      <footer className="mt-24 border-t border-zinc-900 py-12 px-6">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 text-zinc-500 text-xs font-medium">
-           <p>© 2026 FabricGen. Java 21 & Fabric Loader 0.16.5 required.</p>
-           <p className="text-zinc-700">Llama-3.3-70b-versatile Engine Active</p>
+      <footer className="mt-32 border-t border-zinc-900 py-20 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 text-zinc-700 text-[10px] font-black uppercase tracking-widest">
+           <div className="flex items-center gap-12">
+             <a href="#" className="hover:text-zinc-200">Stability</a>
+             <a href="#" className="hover:text-zinc-200">Security</a>
+             <a href="#" className="hover:text-zinc-200">Privacy</a>
+           </div>
+           <p>© 2026 FabricGen. Java 21 Runtime Required.</p>
         </div>
       </footer>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #18181b;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #27272a;
+        }
+      `}</style>
     </div>
   );
 }
