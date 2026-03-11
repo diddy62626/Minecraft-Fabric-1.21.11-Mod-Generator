@@ -1,0 +1,14 @@
+
+> mod-generator@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+✓ Ready in 1161ms
+○ Compiling / ...
+ GET / 200 in 5.1s (compile: 4.7s, render: 420ms)
+ GET / 200 in 275ms (compile: 120ms, render: 155ms)
+ GET / 200 in 71ms (compile: 4ms, render: 67ms)
