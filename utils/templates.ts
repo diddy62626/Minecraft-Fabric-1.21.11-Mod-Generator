@@ -16,10 +16,10 @@ repositories {
 }
 
 dependencies {
-	minecraft "com.mojang:minecraft:1.21.1"
-	mappings "net.fabricmc:yarn:1.21.1+build.3:v2"
+	minecraft "com.mojang:minecraft:1.21.11"
+	mappings "net.fabricmc:yarn:1.21.11+build.3:v2"
 	modImplementation "net.fabricmc:fabric-loader:0.16.5"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:0.104.0+1.21.1"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:0.104.0+1.21.11"
 }
 
 processResources {
@@ -59,13 +59,13 @@ publishing {
 
   gradleProperties: (modId: string) => `
 org.gradle.jvmargs=-Xmx2G
-minecraft_version=1.21.1
-yarn_mappings=1.21.1+build.3
+minecraft_version=1.21.11
+yarn_mappings=1.21.11+build.3
 loader_version=0.16.5
 mod_version=1.0.0
 maven_group=com.example
 archives_base_name=${modId}
-fabric_version=0.104.0+1.21.1
+fabric_version=0.104.0+1.21.11
 `,
 
   fabricModJson: (modId: string, modName: string, description: string, mavenGroup: string) => `
@@ -95,7 +95,7 @@ fabric_version=0.104.0+1.21.1
 	],
 	"depends": {
 		"fabricloader": ">=0.16.5",
-		"minecraft": "~1.21.1",
+		"minecraft": "~1.21.11",
 		"java": ">=21",
 		"fabric-api": "*"
 	}

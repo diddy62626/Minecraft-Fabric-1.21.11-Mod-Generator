@@ -83,7 +83,7 @@ export default function Home() {
       <main className="max-w-4xl mx-auto px-6 py-12">
         <header className="mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-xs font-bold uppercase tracking-wider mb-4">
-            <Zap className="w-3 h-3" /> Minecraft 1.21.1 Supported
+            <Zap className="w-3 h-3" /> Minecraft 1.21.11 Supported
           </div>
           <h1 className="text-5xl font-black mb-4 tracking-tight leading-tight">
             Create your next mod <br />

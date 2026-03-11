@@ -2,13 +2,13 @@
 > mod-generator@0.1.0 dev
 > next dev
 
+⚠ Port 3000 is in use by an unknown process, using available port 3001 instead.
 ▲ Next.js 16.1.6 (Turbopack)
-- Local:         http://localhost:3000
-- Network:       http://192.168.0.2:3000
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.2:3001
 
 ✓ Starting...
-✓ Ready in 1161ms
-○ Compiling / ...
- GET / 200 in 5.1s (compile: 4.7s, render: 420ms)
- GET / 200 in 275ms (compile: 120ms, render: 155ms)
- GET / 200 in 71ms (compile: 4ms, render: 67ms)
+⨯ Unable to acquire lock at /app/.next/dev/lock, is another instance of next dev running?
+  Suggestion: If GET / 200 in 1638ms (compile: 730ms, render: 908ms)
+r process, and then try again.
+[?25h

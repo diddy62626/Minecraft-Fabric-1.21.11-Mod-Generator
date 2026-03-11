@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         messages: [
           {
             role: 'system',
-            content: "You are an expert Minecraft mod developer for Fabric 1.21.1. " +
+            content: "You are an expert Minecraft mod developer for Fabric 1.21.11. " +
             "Generate additional Java code and resources based on the user's request. " +
             "Your response must be a JSON object containing a 'files' array. " +
             "Each file should have 'path' and 'content'. " +
