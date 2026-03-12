@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const MODELS = [
+  'openai/gpt-oss-120b',
   'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant',
-  'meta-llama/llama-4-scout-17b-16e-instruct',
   'qwen/qwen3-32b',
-  'moonshotai/kimi-k2-instruct'
+  'openai/gpt-oss-20b',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'llama-3.1-8b-instant',
+  'moonshotai/kimi-k2-instruct-0905'
 ];
 
 async function generatePixelArt(prompt: string) {
@@ -25,7 +27,7 @@ async function generatePixelArt(prompt: string) {
       },
       body: JSON.stringify({
         description: prompt,
-        image_size: { width: 16, height: 16 }, // Set to 16x16 as requested
+        image_size: { width: 16, height: 16 },
         no_background: true,
       }),
     });
