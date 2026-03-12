@@ -40,7 +40,14 @@ Instructions:
 1. Analyze the user request and the current project state.
 2. Determine which files need to be ADDED, MODIFIED, or REMOVED to fulfill the request.
 3. You can generate Java code, JSON models, textures (base64 PNG), lang files, etc.
-4. For textures, generate high-quality 16x16 or 32x32 base64 PNGs.
+4. TEXTURE GENERATION (CRITICAL):
+   - You MUST generate valid 16x16 PNG textures in base64.
+   - DO NOT generate transparent or empty PNGs. Use actual pixel data.
+   - For reference, a 16x16 solid RED PNG is: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mP8z8BQz0AEYBxVMBiYAAAhS6Pz79rv9AAAAABJRU5ErkJggg==
+   - For reference, a 16x16 solid GREEN PNG is: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mNk+M/wH90AEYBxVMBiYAAAnHqj8/dfS9YAAAAASUVORK5CYII=
+   - For reference, a 16x16 solid BLUE PNG is: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mNkYGD4z0AEYBxVMBiYAAAk9qPz520D8AAAAABJRU5ErkJggg==
+   - Mix these patterns to create varied textures for items and blocks.
+
 5. Your response MUST be a JSON object with two arrays: 'upsert' (files to add or update) and 'delete' (paths to remove).
 
 Response Schema:
@@ -59,7 +66,7 @@ Rules:
 - Always use the correct Minecraft resource paths: src/main/resources/assets/${modId}/...
 - Always use the correct Java package paths: src/main/java/${mavenGroup.replace(/\./g, '/')}/${modId}/...
 - If you modify an existing file, provide the FULL new content.
-- Be precise with Java syntax and Fabric API 0.104.0+1.21.1 conventions.
+- Be precise with Java syntax and Fabric API 0.104.0+1.21.11 conventions.
 - DO NOT explain. Only return the JSON.`;
 
   let lastError = null;
