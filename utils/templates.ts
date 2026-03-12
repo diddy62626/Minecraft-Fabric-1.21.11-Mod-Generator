@@ -1,7 +1,7 @@
 export const FABRIC_TEMPLATES = {
   buildGradle: (modId: string, modVersion: string, mavenGroup: string) => `
 plugins {
-	id 'fabric-loom' version '1.7-SNAPSHOT'
+	id 'fabric-loom' version '1.10-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -17,9 +17,9 @@ repositories {
 
 dependencies {
 	minecraft "com.mojang:minecraft:1.21.11"
-	mappings "net.fabricmc:yarn:1.21.11+build.3:v2"
-	modImplementation "net.fabricmc:fabric-loader:0.16.5"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:0.104.0+1.21.11"
+	mappings "net.fabricmc:yarn:1.21.11+build.4:v2"
+	modImplementation "net.fabricmc:fabric-loader:0.18.4"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:0.141.3+1.21.11"
 }
 
 processResources {
@@ -60,12 +60,12 @@ publishing {
   gradleProperties: (modId: string) => `
 org.gradle.jvmargs=-Xmx2G
 minecraft_version=1.21.11
-yarn_mappings=1.21.11+build.3
-loader_version=0.16.5
+yarn_mappings=1.21.11+build.4
+loader_version=0.18.4
 mod_version=1.0.0
 maven_group=com.example
 archives_base_name=${modId}
-fabric_version=0.104.0+1.21.11
+fabric_version=0.141.3+1.21.11
 `,
 
   fabricModJson: (modId: string, modName: string, description: string, mavenGroup: string) => `
@@ -94,7 +94,7 @@ fabric_version=0.104.0+1.21.11
 		"${modId}.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.5",
+		"fabricloader": ">=0.18.4",
 		"minecraft": "~1.21.11",
 		"java": ">=21",
 		"fabric-api": "*"

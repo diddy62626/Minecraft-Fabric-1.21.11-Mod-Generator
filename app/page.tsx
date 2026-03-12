@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { generateModZip } from '@/utils/generator';
 import { FABRIC_TEMPLATES } from '@/utils/templates';
-import { Download, Loader2, Hammer, Code, Zap, Settings, Book, Info, Plus, RotateCcw, Trash2, FileCode, ImageIcon, X, ChevronRight } from 'lucide-react';
+import { Download, Loader2, Hammer, Code, Zap, Settings, Book, Info, Plus, RotateCcw, Trash2, FileCode, ImageIcon, X, ChevronRight, Binary, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface ModFile {
   path: string;
@@ -14,6 +14,9 @@ interface ModFile {
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [building, setBuilding] = useState(false);
+  const [buildProgress, setBuildProgress] = useState(0);
+  const [buildStatus, setBuildStatus] = useState<{ status: string; conclusion?: string | null; htmlUrl?: string; downloadUrl?: string } | null>(null);
   const [generatedFiles, setGeneratedFiles] = useState<ModFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<ModFile | null>(null);
   const [formData, setFormData] = useState({
@@ -25,6 +28,47 @@ export default function Home() {
     prompt: 'Add a new item called "Epic Gem" that gives the player strength when held. Also generate a shiny purple texture for it.',
   });
 
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Simulated build progress (visual filler)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (building && (!buildStatus || buildStatus.status !== 'completed')) {
+      interval = setInterval(() => {
+        setBuildProgress(prev => {
+          if (prev >= 98) return prev;
+          return prev + (100 - prev) * 0.05;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [building, buildStatus]);
+
+  // Real polling
+  useEffect(() => {
+    if (building) {
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/build/status?modId=${formData.modId}`);
+          const data = await res.json();
+          if (data.status) {
+            setBuildStatus(data);
+            if (data.status === 'completed') {
+              setBuilding(false);
+              setBuildProgress(100);
+              if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            }
+          }
+        } catch (e) {
+          console.error("Polling error:", e);
+        }
+      }, 5000);
+    }
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, [building, formData.modId]);
+
   const getBaseTemplates = () => {
     const { modId, modName, modVersion, mavenGroup, description } = formData;
     return [
@@ -33,6 +77,10 @@ export default function Home() {
       { path: 'gradle.properties', content: FABRIC_TEMPLATES.gradleProperties(modId) },
       { path: 'settings.gradle', content: FABRIC_TEMPLATES.settingsGradle }
     ];
+  };
+
+  const getAllFiles = () => {
+     return [...getBaseTemplates(), ...generatedFiles];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,10 +157,36 @@ export default function Home() {
     }
   };
 
+  const handleCloudBuild = async () => {
+    if (building) return;
+    setBuilding(true);
+    setBuildStatus(null);
+    setBuildProgress(0);
+    try {
+      const response = await fetch('/api/build', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modFiles: getAllFiles(),
+          modId: formData.modId
+        }),
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+    } catch (error: any) {
+      alert("Build failed to trigger: " + error.message);
+      setBuilding(false);
+    }
+  };
+
   const handleReset = () => {
     if (confirm('Are you sure you want to reset all generated files?')) {
       setGeneratedFiles([]);
       setSelectedFile(null);
+      setBuildStatus(null);
+      setBuilding(false);
     }
   };
 
@@ -140,7 +214,7 @@ export default function Home() {
             <a href="#" className="text-orange-500 border-b-2 border-orange-500 pb-1">Generator</a>
             <a href="#" className="hover:text-zinc-200 transition-colors">Docs</a>
             <a href="#" className="hover:text-zinc-200 transition-colors">Examples</a>
-            <a href="#" className="hover:text-zinc-200 transition-colors">GitHub</a>
+            <a href="https://github.com/diddy62626/Minecraft-Fabric-1.21.11-Mod-Generator" target="_blank" className="hover:text-zinc-200 transition-colors inline-flex items-center gap-1">GitHub <ExternalLink className="w-2.5 h-2.5" /></a>
           </div>
           <div className="flex items-center gap-4">
              <button onClick={handleReset} className="p-2 text-zinc-600 hover:text-orange-500 transition-colors" title="Reset Project"><RotateCcw className="w-5 h-5" /></button>
@@ -192,11 +266,11 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-[2] bg-zinc-100 hover:bg-white text-zinc-950 font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-white/5"
+                  className="flex-[2] min-w-[200px] bg-zinc-100 hover:bg-white text-zinc-950 font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-white/5"
                 >
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
@@ -212,18 +286,70 @@ export default function Home() {
                   type="button"
                   onClick={handleDownload}
                   disabled={exporting || generatedFiles.length === 0}
-                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-900 shadow-xl shadow-orange-900/10"
+                  className="flex-1 min-w-[150px] bg-zinc-800 hover:bg-zinc-700 text-white font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-xl"
                 >
                   {exporting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
                       <Download className="w-5 h-5" />
-                      EXPORT
+                      EXPORT ZIP
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCloudBuild}
+                  disabled={building || generatedFiles.length === 0}
+                  className="flex-1 min-w-[150px] bg-orange-600 hover:bg-orange-500 text-white font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-900 shadow-xl shadow-orange-900/10"
+                >
+                  {building ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Binary className="w-5 h-5" />
+                      BUILD JAR
                     </>
                   )}
                 </button>
               </div>
+
+              {(building || buildStatus) && (
+                <div className="space-y-4 p-6 bg-zinc-900/40 border border-zinc-900 rounded-[2rem] animate-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                    <span className="text-zinc-500 flex items-center gap-2">
+                      {buildStatus?.status === 'completed' ? (
+                        buildStatus.conclusion === 'success' ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <AlertCircle className="w-3 h-3 text-red-500" />
+                      ) : (
+                        <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
+                      )}
+                      {buildStatus ? (
+                         buildStatus.status === 'completed' ? (buildStatus.conclusion === 'success' ? 'Build Complete' : 'Build Failed') : 'GitHub Runner Building...'
+                      ) : 'Triggering Build...'}
+                    </span>
+                    <span className="text-orange-500">{Math.round(buildProgress)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ease-out shadow-[0_0_20px_rgba(249,115,22,0.5)] ${buildStatus?.conclusion === 'failure' ? 'bg-red-500' : 'bg-orange-500'}`}
+                      style={{ width: `${buildProgress}%` }}
+                    />
+                  </div>
+                  {buildStatus && (
+                    <div className="flex items-center justify-between gap-4">
+                       <a href={buildStatus.htmlUrl} target="_blank" className="text-[9px] font-black text-zinc-600 hover:text-zinc-200 uppercase tracking-widest flex items-center gap-1.5 transition-colors">
+                         View Log <ExternalLink className="w-2.5 h-2.5" />
+                       </a>
+                       {buildStatus.conclusion === 'success' && (
+                         <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">
+                           Artifact Ready in GitHub
+                         </span>
+                       )}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           </form>
         </div>
@@ -269,7 +395,7 @@ export default function Home() {
                     <div className="flex items-center gap-4 p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
                       <Info className="w-4 h-4 text-orange-500" />
                       <p className="text-[9px] font-medium text-zinc-500 leading-normal">
-                        Click a file to inspect code.
+                        Click <span className="text-orange-500">BUILD JAR</span> to compile your mod on GitHub and download the resulting JAR file.
                       </p>
                     </div>
                   </div>
@@ -304,7 +430,6 @@ export default function Home() {
                         src={`data:image/png;base64,${selectedFile.content}`}
                         alt="Texture Preview"
                         className="w-full h-full object-contain image-pixelated"
-                        onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
                    </div>
                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Base64 Encoded PNG Texture</p>

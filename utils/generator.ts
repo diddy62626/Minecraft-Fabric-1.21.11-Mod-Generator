@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { FABRIC_TEMPLATES } from './templates';
+import { GRADLEW_B64, GRADLEW_BAT_B64, GRADLE_WRAPPER_JAR_B64 } from './wrapper_binaries';
 
 // A simple 16x16 orange square PNG for the mod icon
 const DEFAULT_ICON_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAIElEQVR42mP8z8BQD8SMDEwD7ICBf8D4HwZInAGDAmA0DAAA76U8v6mUeEAAAAAASUVORK5CYII=";
@@ -37,7 +38,16 @@ export async function generateModZip(config: {
   zip.file('.gitignore', ".gradle\nbuild/\nbin/\n!gradle/wrapper/gradle-wrapper.jar\n.project\n.classpath\n.settings/\n.nb-gradle/\n.vscode/\nbin/\nout/\n.DS_Store\n*.swp\n*.iml\n*.ipr\n*.iws\n.idea/\n.gradle/\nbuild/\nrun/\n");
 
   // Gradle wrapper
+  const gradlewBytes = base64ToUint8Array(GRADLEW_B64);
+  if (gradlewBytes) zip.file('gradlew', gradlewBytes, { unixPermissions: 0o755 });
+
+  const gradlewBatBytes = base64ToUint8Array(GRADLEW_BAT_B64);
+  if (gradlewBatBytes) zip.file('gradlew.bat', gradlewBatBytes);
+
   zip.file('gradle/wrapper/gradle-wrapper.properties', FABRIC_TEMPLATES.gradleWrapperProperties);
+
+  const wrapperJarBytes = base64ToUint8Array(GRADLE_WRAPPER_JAR_B64);
+  if (wrapperJarBytes) zip.file('gradle/wrapper/gradle-wrapper.jar', wrapperJarBytes);
 
   // Resources
   zip.file('src/main/resources/fabric.mod.json', FABRIC_TEMPLATES.fabricModJson(modId, modName, description, mavenGroup));
