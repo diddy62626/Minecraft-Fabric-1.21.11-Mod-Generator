@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { generateModZip } from '@/utils/generator';
 import { FABRIC_TEMPLATES } from '@/utils/templates';
-import { Download, Loader2, Hammer, Code, Zap, Settings, Book, Info, Plus, RotateCcw, Trash2, FileCode, ImageIcon } from 'lucide-react';
+import { Download, Loader2, Hammer, Code, Zap, Settings, Book, Info, Plus, RotateCcw, Trash2, FileCode, ImageIcon, X, ChevronRight } from 'lucide-react';
 
 interface ModFile {
   path: string;
@@ -15,6 +15,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [generatedFiles, setGeneratedFiles] = useState<ModFile[]>([]);
+  const [selectedFile, setSelectedFile] = useState<ModFile | null>(null);
   const [formData, setFormData] = useState({
     modName: 'My Epic Mod',
     modId: 'my_epic_mod',
@@ -57,11 +58,9 @@ export default function Home() {
 
       setGeneratedFiles(prev => {
         let nextFiles = [...prev];
-
         if (data.delete && Array.isArray(data.delete)) {
           nextFiles = nextFiles.filter(f => !data.delete.includes(f.path));
         }
-
         if (data.upsert && Array.isArray(data.upsert)) {
           data.upsert.forEach((file: ModFile) => {
             const index = nextFiles.findIndex(f => f.path === file.path);
@@ -72,7 +71,6 @@ export default function Home() {
             }
           });
         }
-
         return nextFiles;
       });
 
@@ -96,12 +94,9 @@ export default function Home() {
       const link = document.createElement('a');
       link.href = url;
       link.download = formData.modId + "-" + formData.modVersion + ".zip";
-
-      // Essential for some browsers
       document.body.appendChild(link);
       link.click();
 
-      // Small delay before cleanup
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -117,11 +112,14 @@ export default function Home() {
   const handleReset = () => {
     if (confirm('Are you sure you want to reset all generated files?')) {
       setGeneratedFiles([]);
+      setSelectedFile(null);
     }
   };
 
-  const removeFile = (path: string) => {
+  const removeFile = (path: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setGeneratedFiles(prev => prev.filter(f => f.path !== path));
+    if (selectedFile?.path === path) setSelectedFile(null);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -151,7 +149,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
+      <main className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
         <div className="lg:col-span-7 space-y-12">
           <header>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-widest mb-6">
@@ -161,13 +159,10 @@ export default function Home() {
               Architect your <br />
               <span className="text-zinc-800">perfect mod.</span>
             </h1>
-            <p className="text-zinc-500 text-lg max-w-xl font-medium leading-relaxed">
-              Our Llama-3.3 engine automatically detects code structures, generates 32-bit textures, and manages your file system iteratively.
-            </p>
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            <section className="bg-zinc-900/20 border border-zinc-900 p-8 rounded-[2rem] space-y-8">
+            <section className="bg-zinc-900/20 border border-zinc-900 p-8 rounded-[2rem] space-y-8 shadow-inner shadow-black/20">
               <div className="flex items-center gap-2 text-zinc-600 uppercase text-[10px] font-black tracking-widest">
                 <Settings className="w-4 h-4" /> Core Manifest
               </div>
@@ -191,7 +186,7 @@ export default function Home() {
                   value={formData.prompt}
                   onChange={handleChange}
                   rows={5}
-                  className="w-full bg-zinc-900 border border-zinc-900 rounded-[2rem] px-8 py-8 focus:ring-2 focus:ring-orange-600/20 outline-none transition-all resize-none font-medium text-lg leading-relaxed placeholder:text-zinc-800"
+                  className="w-full bg-zinc-900 border border-zinc-900 rounded-[2rem] px-8 py-8 focus:ring-2 focus:ring-orange-600/20 outline-none transition-all resize-none font-medium text-lg leading-relaxed placeholder:text-zinc-800 shadow-inner shadow-black/20"
                   placeholder="Ask to add items, blocks, logic, or textures..."
                   required
                 />
@@ -201,7 +196,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-[2] bg-zinc-100 hover:bg-white text-zinc-950 font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50"
+                  className="flex-[2] bg-zinc-100 hover:bg-white text-zinc-950 font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-white/5"
                 >
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
@@ -217,7 +212,7 @@ export default function Home() {
                   type="button"
                   onClick={handleDownload}
                   disabled={exporting || generatedFiles.length === 0}
-                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-900"
+                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-900 shadow-xl shadow-orange-900/10"
                 >
                   {exporting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -235,7 +230,7 @@ export default function Home() {
 
         <div className="lg:col-span-5 space-y-8">
            <div className="sticky top-32">
-              <div className="bg-zinc-900/20 border border-zinc-900 rounded-[2.5rem] p-10 space-y-8">
+              <div className="bg-zinc-900/20 border border-zinc-900 rounded-[2.5rem] p-10 space-y-8 shadow-inner shadow-black/20">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-black uppercase tracking-widest text-zinc-600">File System</h3>
                     <div className="bg-zinc-950 border border-zinc-900 px-3 py-1 rounded-full text-[10px] font-black text-orange-500">{generatedFiles.length} ACTIVE</div>
@@ -251,7 +246,7 @@ export default function Home() {
                   ) : (
                     <div className="space-y-3 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
                       {generatedFiles.map((file, i) => (
-                        <div key={i} className="group flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl transition-all hover:border-zinc-800">
+                        <div key={i} onClick={() => setSelectedFile(file)} className={`group flex items-center justify-between p-4 bg-zinc-950 border rounded-2xl transition-all cursor-pointer ${selectedFile?.path === file.path ? 'border-orange-500/50 shadow-lg shadow-orange-500/5' : 'border-zinc-900 hover:border-zinc-800'}`}>
                           <div className="flex items-center gap-4 truncate">
                             {file.encoding === 'base64' ? <ImageIcon className="w-4 h-4 text-orange-500/50" /> : <FileCode className="w-4 h-4 text-blue-500/50" />}
                             <div className="flex flex-col truncate">
@@ -259,9 +254,12 @@ export default function Home() {
                               <span className="text-[9px] text-zinc-600 truncate uppercase tracking-tighter">{file.path.replace(/\/[^/]+$/, '')}</span>
                             </div>
                           </div>
-                          <button onClick={() => removeFile(file.path)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-700 hover:text-red-500 transition-all">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                             <ChevronRight className={`w-3 h-3 text-zinc-800 transition-transform ${selectedFile?.path === file.path ? 'rotate-90 text-orange-500' : ''}`} />
+                             <button onClick={(e) => removeFile(file.path, e)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-800 hover:text-red-500 transition-all">
+                                <Trash2 className="w-4 h-4" />
+                             </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -271,7 +269,7 @@ export default function Home() {
                     <div className="flex items-center gap-4 p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
                       <Info className="w-4 h-4 text-orange-500" />
                       <p className="text-[9px] font-medium text-zinc-500 leading-normal">
-                        Click <span className="text-orange-500">EXPORT</span> to generate a production-ready Gradle project for IntelliJ/VS Code.
+                        Click a file to inspect code.
                       </p>
                     </div>
                   </div>
@@ -280,12 +278,53 @@ export default function Home() {
         </div>
       </main>
 
+      {/* File Inspector Modal */}
+      {selectedFile && (
+        <div className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="w-full max-w-5xl h-[80vh] bg-zinc-900 border border-zinc-800 rounded-[2.5rem] flex flex-col shadow-2xl shadow-black">
+            <header className="p-8 border-b border-zinc-800 flex items-center justify-between">
+               <div className="flex items-center gap-4">
+                  <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
+                    {selectedFile.encoding === 'base64' ? <ImageIcon className="w-5 h-5 text-orange-500" /> : <FileCode className="w-5 h-5 text-blue-500" />}
+                  </div>
+                  <div className="flex flex-col">
+                    <h2 className="text-sm font-black text-zinc-100 tracking-tight">{selectedFile.path.split('/').pop()}</h2>
+                    <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">{selectedFile.path}</span>
+                  </div>
+               </div>
+               <button onClick={() => setSelectedFile(null)} className="p-3 bg-zinc-950 hover:bg-zinc-800 rounded-2xl border border-zinc-800 transition-colors">
+                 <X className="w-5 h-5" />
+               </button>
+            </header>
+            <div className="flex-1 overflow-auto p-8 custom-scrollbar">
+              {selectedFile.encoding === 'base64' ? (
+                <div className="h-full flex flex-col items-center justify-center space-y-6">
+                   <div className="w-48 h-48 bg-zinc-950 border-4 border-zinc-800 rounded-[2rem] flex items-center justify-center overflow-hidden shadow-inner shadow-black p-8">
+                      <img
+                        src={`data:image/png;base64,${selectedFile.content}`}
+                        alt="Texture Preview"
+                        className="w-full h-full object-contain image-pixelated"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                   </div>
+                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Base64 Encoded PNG Texture</p>
+                </div>
+              ) : (
+                <pre className="font-mono text-sm text-zinc-400 leading-relaxed">
+                  <code>{selectedFile.content}</code>
+                </pre>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <footer className="mt-32 border-t border-zinc-900 py-20 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 text-zinc-700 text-[10px] font-black uppercase tracking-widest">
            <div className="flex items-center gap-12">
-             <a href="#" className="hover:text-zinc-200">Stability</a>
-             <a href="#" className="hover:text-zinc-200">Security</a>
-             <a href="#" className="hover:text-zinc-200">Privacy</a>
+             <a href="#" className="hover:text-zinc-200 transition-colors">Stability</a>
+             <a href="#" className="hover:text-zinc-200 transition-colors">Security</a>
+             <a href="#" className="hover:text-zinc-200 transition-colors">Privacy</a>
            </div>
            <p>© 2026 FabricGen. Java 21 Runtime Required.</p>
         </div>
@@ -304,6 +343,9 @@ export default function Home() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #27272a;
+        }
+        .image-pixelated {
+          image-rendering: pixelated;
         }
       `}</style>
     </div>
