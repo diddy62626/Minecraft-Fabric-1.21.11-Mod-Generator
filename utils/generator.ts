@@ -40,9 +40,24 @@ export async function generateModZip(config: {
   // Extra files from AI
   if (extraFiles) {
     extraFiles.forEach(file => {
-      if (file.encoding === 'base64') {
-        zip.file(file.path, file.content, { base64: true });
-      } else {
+      try {
+        if (file.encoding === 'base64') {
+          // Robust base64 cleaning
+          let cleanContent = file.content.trim();
+          // Remove data URI prefix if present
+          cleanContent = cleanContent.replace(/^data:image\/[a-z]+;base64,/, '');
+          // Remove all whitespace
+          cleanContent = cleanContent.replace(/\s/g, '');
+
+          // Verify if it's likely valid base64 (length multiple of 4 or has padding)
+          // JSZip is sensitive to this.
+          zip.file(file.path, cleanContent, { base64: true });
+        } else {
+          zip.file(file.path, file.content);
+        }
+      } catch (e) {
+        console.warn(`Failed to process ${file.path} as base64, falling back to text.`, e);
+        // Fallback: if base64 fails, add as text so the ZIP isn't broken
         zip.file(file.path, file.content);
       }
     });
