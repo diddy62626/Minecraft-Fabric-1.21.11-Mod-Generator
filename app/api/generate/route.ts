@@ -9,6 +9,42 @@ const MODELS = [
   'moonshotai/kimi-k2-instruct'
 ];
 
+async function generatePixelArt(prompt: string) {
+  const apiKey = process.env.PIXELLAB_API_KEY;
+  if (!apiKey) {
+    console.error('PIXELLAB_API_KEY is not set');
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://api.pixellab.ai/v1/generate-image-pixflux', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        description: prompt,
+        image_size: { width: 32, height: 32 },
+        no_background: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Pixel Lab API error:', errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    // Pixel Lab returns "data:image/png;base64,..."
+    return data.image.base64;
+  } catch (error) {
+    console.error('Failed to call Pixel Lab:', error);
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   const { prompt, modId, modName, mavenGroup, currentFiles, baseTemplates } = await req.json();
 
@@ -37,18 +73,14 @@ ${JSON.stringify(baseTemplates, null, 2)}
 ${JSON.stringify(currentFiles || [], null, 2)}
 
 Instructions:
-1. Analyze the user request and the current project state.
-2. Determine which files need to be ADDED, MODIFIED, or REMOVED to fulfill the request.
-3. You can generate Java code, JSON models, textures (base64 PNG), lang files, etc.
-4. TEXTURE GENERATION (CRITICAL):
-   - You MUST generate valid 16x16 PNG textures in base64.
-   - DO NOT generate transparent or empty PNGs. Use actual pixel data.
-   - For reference, a 16x16 solid RED PNG is: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mP8z8BQz0AEYBxVMBiYAAAhS6Pz79rv9AAAAABJRU5ErkJggg==
-   - For reference, a 16x16 solid GREEN PNG is: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mNk+M/wH90AEYBxVMBiYAAAnHqj8/dfS9YAAAAASUVORK5CYII=
-   - For reference, a 16x16 solid BLUE PNG is: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mNkYGD4z0AEYBxVMBiYAAAk9qPz520D8AAAAABJRU5ErkJggg==
-   - Mix these patterns to create varied textures for items and blocks.
-
-5. Your response MUST be a JSON object with two arrays: 'upsert' (files to add or update) and 'delete' (paths to remove).
+1. Analyze the user request and current project state.
+2. Determine which files need to be ADDED, MODIFIED, or REMOVED.
+3. You generate Java code, JSON models, lang files, etc.
+4. TEXTURE GENERATION:
+   - For ANY texture file (.png), DO NOT generate base64 content.
+   - Instead, set "content" to a highly descriptive prompt for the texture (e.g., "a shiny purple amethyst gemstone pixel art, isolated").
+   - Set "encoding" to "texture_prompt".
+5. Your response MUST be a JSON object with 'upsert' and 'delete' arrays.
 
 Response Schema:
 {
@@ -56,17 +88,16 @@ Response Schema:
     {
       "path": "string",
       "content": "string",
-      "encoding": "utf-8" | "base64"
+      "encoding": "utf-8" | "texture_prompt"
     }
   ],
   "delete": ["string"]
 }
 
 Rules:
-- Always use the correct Minecraft resource paths: src/main/resources/assets/${modId}/...
-- Always use the correct Java package paths: src/main/java/${mavenGroup.replace(/\./g, '/')}/${modId}/...
-- If you modify an existing file, provide the FULL new content.
-- Be precise with Java syntax and Fabric API 0.104.0+1.21.11 conventions.
+- Resource paths: src/main/resources/assets/${modId}/...
+- Java paths: src/main/java/${mavenGroup.replace(/\./g, '/')}/${modId}/...
+- Always provide FULL content for modified files.
 - DO NOT explain. Only return the JSON.`;
 
   let lastError = null;
@@ -82,6 +113,25 @@ Rules:
       });
 
       const responseData = JSON.parse(completion.choices[0].message.content || '{"upsert": [], "delete": []}');
+
+      // Process texture prompts with Pixel Lab
+      if (responseData.upsert) {
+        for (const file of responseData.upsert) {
+          if (file.encoding === 'texture_prompt') {
+            console.log(`Generating texture for ${file.path} with prompt: ${file.content}`);
+            const base64 = await generatePixelArt(file.content);
+            if (base64) {
+              file.content = base64;
+              file.encoding = 'base64';
+            } else {
+              // Fallback to a solid color if Pixel Lab fails
+              file.content = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mP8z8BQz0AEYBxVMBiYAAAhS6Pz79rv9AAAAABJRU5ErkJggg==";
+              file.encoding = 'base64';
+            }
+          }
+        }
+      }
+
       return NextResponse.json(responseData);
     } catch (error: any) {
       console.error(`Failed with model ${model}:`, error);
