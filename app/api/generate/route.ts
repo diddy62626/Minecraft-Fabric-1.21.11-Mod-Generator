@@ -25,7 +25,7 @@ async function generatePixelArt(prompt: string) {
       },
       body: JSON.stringify({
         description: prompt,
-        image_size: { width: 32, height: 32 },
+        image_size: { width: 16, height: 16 }, // Set to 16x16 as requested
         no_background: true,
       }),
     });
@@ -37,7 +37,6 @@ async function generatePixelArt(prompt: string) {
     }
 
     const data = await response.json();
-    // Pixel Lab returns "data:image/png;base64,..."
     return data.image.base64;
   } catch (error) {
     console.error('Failed to call Pixel Lab:', error);
@@ -76,10 +75,11 @@ Instructions:
 1. Analyze the user request and current project state.
 2. Determine which files need to be ADDED, MODIFIED, or REMOVED.
 3. You generate Java code, JSON models, lang files, etc.
-4. TEXTURE GENERATION:
+4. TEXTURE GENERATION (16x16 pixels):
    - For ANY texture file (.png), DO NOT generate base64 content.
    - Instead, set "content" to a highly descriptive prompt for the texture (e.g., "a shiny purple amethyst gemstone pixel art, isolated").
    - Set "encoding" to "texture_prompt".
+   - Note: The system will automatically generate a 16x16 PNG based on this prompt.
 5. Your response MUST be a JSON object with 'upsert' and 'delete' arrays.
 
 Response Schema:
@@ -114,17 +114,15 @@ Rules:
 
       const responseData = JSON.parse(completion.choices[0].message.content || '{"upsert": [], "delete": []}');
 
-      // Process texture prompts with Pixel Lab
       if (responseData.upsert) {
         for (const file of responseData.upsert) {
           if (file.encoding === 'texture_prompt') {
-            console.log(`Generating texture for ${file.path} with prompt: ${file.content}`);
+            console.log(`Generating 16x16 texture for ${file.path} with prompt: ${file.content}`);
             const base64 = await generatePixelArt(file.content);
             if (base64) {
               file.content = base64;
               file.encoding = 'base64';
             } else {
-              // Fallback to a solid color if Pixel Lab fails
               file.content = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFklEQVR42mP8z8BQz0AEYBxVMBiYAAAhS6Pz79rv9AAAAABJRU5ErkJggg==";
               file.encoding = 'base64';
             }
