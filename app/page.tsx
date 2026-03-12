@@ -13,6 +13,7 @@ interface ModFile {
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [generatedFiles, setGeneratedFiles] = useState<ModFile[]>([]);
   const [formData, setFormData] = useState({
     modName: 'My Epic Mod',
@@ -57,12 +58,10 @@ export default function Home() {
       setGeneratedFiles(prev => {
         let nextFiles = [...prev];
 
-        // Handle deletions
         if (data.delete && Array.isArray(data.delete)) {
           nextFiles = nextFiles.filter(f => !data.delete.includes(f.path));
         }
 
-        // Handle upserts
         if (data.upsert && Array.isArray(data.upsert)) {
           data.upsert.forEach((file: ModFile) => {
             const index = nextFiles.findIndex(f => f.path === file.path);
@@ -85,19 +84,34 @@ export default function Home() {
   };
 
   const handleDownload = async () => {
-    const blob = await generateModZip({
-      ...formData,
-      extraFiles: generatedFiles,
-    });
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const blob = await generateModZip({
+        ...formData,
+        extraFiles: generatedFiles,
+      });
 
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = formData.modId + "-" + formData.modVersion + ".zip";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = formData.modId + "-" + formData.modVersion + ".zip";
+
+      // Essential for some browsers
+      document.body.appendChild(link);
+      link.click();
+
+      // Small delay before cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        setExporting(false);
+      }, 100);
+    } catch (error: any) {
+      console.error("Download failed:", error);
+      alert("Failed to generate ZIP: " + error.message);
+      setExporting(false);
+    }
   };
 
   const handleReset = () => {
@@ -202,11 +216,17 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleDownload}
-                  disabled={generatedFiles.length === 0}
+                  disabled={exporting || generatedFiles.length === 0}
                   className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-5 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-900"
                 >
-                  <Download className="w-5 h-5" />
-                  EXPORT
+                  {exporting ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      EXPORT
+                    </>
+                  )}
                 </button>
               </div>
             </section>
