@@ -44,19 +44,13 @@ jobs:
                       out.write(content)
           "
 
-      - name: Generate Gradle Wrapper
-        run: |
-          if [ ! -f gradlew ]; then
-            echo "Gradlew missing, generating fresh wrapper (Gradle 9.4)..."
-            gradle wrapper --gradle-version 9.4
-          fi
-          chmod +x gradlew
-
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4
 
       - name: Build with Gradle
-        run: ./gradlew build --stacktrace
+        run: gradle build --stacktrace
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
