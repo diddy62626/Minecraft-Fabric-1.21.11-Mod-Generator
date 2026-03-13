@@ -32,12 +32,9 @@ jobs:
           for file in data:
               path = file['path']
               if not path: continue
-
-              # Fix: Handle empty directory name (files in root)
               dirname = os.path.dirname(path)
               if dirname:
                   os.makedirs(dirname, exist_ok=True)
-
               content = file['content']
               if file.get('encoding') == 'base64':
                   with open(path, 'wb') as out:
@@ -47,6 +44,9 @@ jobs:
                       out.write(content)
           "
 
+      - name: Debug Files
+        run: ls -R
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
@@ -54,9 +54,10 @@ jobs:
         run: |
           if [ -f gradlew ]; then
             chmod +x gradlew
-            ./gradlew build
+            ./gradlew build --stacktrace
           else
-            gradle build
+            echo "Error: gradlew not found. Attempting global gradle build..."
+            gradle build --stacktrace
           fi
 
       - name: Upload JAR

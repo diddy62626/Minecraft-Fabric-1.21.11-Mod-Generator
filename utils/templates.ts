@@ -1,7 +1,7 @@
 export const FABRIC_TEMPLATES = {
   buildGradle: (modId: string, modVersion: string, mavenGroup: string) => `
 plugins {
-	id 'fabric-loom' version '1.10-SNAPSHOT'
+	id 'fabric-loom' version '1.15-SNAPSHOT'
 	id 'maven-publish'
 }
 

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Octokit } from 'octokit';
+import { GRADLEW_B64, GRADLEW_BAT_B64, GRADLE_WRAPPER_JAR_B64 } from '@/utils/wrapper_binaries';
+import { FABRIC_TEMPLATES } from '@/utils/templates';
 
 export async function POST(req: Request) {
   const { modFiles, modId } = await req.json();
@@ -11,23 +13,27 @@ export async function POST(req: Request) {
   const repoFull = process.env.GITHUB_REPO || 'diddy62626/Minecraft-Fabric-1.21.11-Mod-Generator';
   const [owner, repo] = repoFull.split('/');
 
-  // Ref Priority:
-  // 1. Explicit GITHUB_BRANCH (User's choice)
-  // 2. 'main' (Standard default)
-  // 3. VERCEL_GIT_COMMIT_REF (Detected branch)
   const ref = process.env.GITHUB_BRANCH || 'main';
+
+  // Ensure all Gradle Wrapper files are included
+  const fullModFiles = [
+    ...modFiles,
+    { path: 'gradlew', content: GRADLEW_B64, encoding: 'base64' },
+    { path: 'gradlew.bat', content: GRADLEW_BAT_B64, encoding: 'base64' },
+    { path: 'gradle/wrapper/gradle-wrapper.jar', content: GRADLE_WRAPPER_JAR_B64, encoding: 'base64' },
+    { path: 'gradle/wrapper/gradle-wrapper.properties', content: FABRIC_TEMPLATES.gradleWrapperProperties }
+  ];
 
   const octokit = new Octokit({ auth: process.env.GH_TOKEN });
 
   try {
-    // Trigger the workflow
     await octokit.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches', {
       owner,
       repo,
       workflow_id: 'build-mod.yml',
       ref,
       inputs: {
-        mod_files_json: JSON.stringify(modFiles),
+        mod_files_json: JSON.stringify(fullModFiles),
         mod_id: modId
       },
       headers: {
@@ -39,7 +45,6 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('GitHub Action trigger failed:', error);
 
-    // If 'main' failed, try the Vercel ref as a fallback
     if (error.message.includes('No ref found') && process.env.VERCEL_GIT_COMMIT_REF && ref !== process.env.VERCEL_GIT_COMMIT_REF) {
        try {
           const fallbackRef = process.env.VERCEL_GIT_COMMIT_REF;
@@ -49,7 +54,7 @@ export async function POST(req: Request) {
             workflow_id: 'build-mod.yml',
             ref: fallbackRef,
             inputs: {
-              mod_files_json: JSON.stringify(modFiles),
+              mod_files_json: JSON.stringify(fullModFiles),
               mod_id: modId
             },
             headers: {
