@@ -12,12 +12,14 @@ FabricGen is a modern web application that allows you to architect Minecraft Fab
 
 To run this project, you need to set the following environment variables:
 
-- `GROQ_API_KEY`: Your API key from [Groq](https://console.groq.com/). This is used for the AI code generation.
-- `PIXELLAB_API_KEY`: Your API key from [Pixel Lab](https://pixellab.ai/). This is used for generating the 16x16 textures.
+- `GROQ_API_KEY`: Your API key from [Groq](https://console.groq.com/).
+- `PIXELLAB_API_KEY`: Your API key from [Pixel Lab](https://pixellab.ai/).
 - `GH_TOKEN`: A GitHub Personal Access Token (PAT).
   - **Where to get it**: Go to [GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens).
-  - **Permissions**: It needs the `workflow` scope to trigger and monitor GitHub Actions.
-- `GITHUB_REPO`: The full name of the repository where the app is deployed (e.g., `username/repo-name`). This is required for the Cloud Build feature to know where to trigger the workflow.
+  - **Required Scopes**:
+    - [x] **`workflow`**: (Update GitHub Action workflows) - This is **required** to trigger the build pipeline.
+    - [x] **`repo`** (or `public_repo`): Required to access the repository and its actions.
+- `GITHUB_REPO`: The full name of the repository (e.g., `username/repo-name`).
 
 ## Local Development
 
@@ -28,4 +30,4 @@ To run this project, you need to set the following environment variables:
 
 ## Deployment
 
-This app is ready to be deployed on [Vercel](https://vercel.com). Make sure to add the environment variables in the Vercel project settings.
+This app is ready to be deployed on [Vercel](https://vercel.com).
