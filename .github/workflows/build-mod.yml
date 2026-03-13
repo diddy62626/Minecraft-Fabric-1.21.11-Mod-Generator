@@ -32,7 +32,12 @@ jobs:
           for file in data:
               path = file['path']
               if not path: continue
-              os.makedirs(os.path.dirname(path), exist_ok=True)
+
+              # Fix: Handle empty directory name (files in root)
+              dirname = os.path.dirname(path)
+              if dirname:
+                  os.makedirs(dirname, exist_ok=True)
+
               content = file['content']
               if file.get('encoding') == 'base64':
                   with open(path, 'wb') as out:
