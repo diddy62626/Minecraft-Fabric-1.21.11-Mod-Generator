@@ -18,8 +18,9 @@ To run this project, you need to set the following environment variables:
   - **Where to get it**: Go to [GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens).
   - **Required Scopes**:
     - [x] **`workflow`**: (Update GitHub Action workflows) - This is **required** to trigger the build pipeline.
-    - [x] **`repo`** (or `public_repo`): Required to access the repository and its actions.
+    - [x] **`repo`**: (Full control of repositories) - Required to trigger and monitor actions.
 - `GITHUB_REPO`: The full name of the repository (e.g., `username/repo-name`).
+- `GITHUB_BRANCH`: (Optional) The branch to use for triggering workflows. Defaults to `main`. Change to `master` if your repository uses that as the default branch.
 
 ## Local Development
 
@@ -30,4 +31,4 @@ To run this project, you need to set the following environment variables:
 
 ## Deployment
 
-This app is ready to be deployed on [Vercel](https://vercel.com).
+This app is ready to be deployed on [Vercel](https://vercel.com). Make sure to configure the environment variables in the Vercel project settings.
