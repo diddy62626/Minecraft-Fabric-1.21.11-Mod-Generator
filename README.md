@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FabricGen - Minecraft 1.21.11 Mod Generator
 
-## Getting Started
+FabricGen is a modern web application that allows you to architect Minecraft Fabric mods for version 1.21.11 using AI. It generates Java source code, JSON models, and even 16x16 pixel art textures iteratively.
 
-First, run the development server:
+## Features
+- **Iterative AI Architect**: Refine your mod by chatting with an AI that understands the project state.
+- **Pixel Art Generation**: Automatically generates 16x16 PNG textures via Pixel Lab.
+- **Cloud Build**: Compiles your mod to a `.jar` file using GitHub Actions.
+- **Export ZIP**: Download the full source code including a pre-configured Gradle Wrapper.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Environment Variables
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+To run this project, you need to set the following environment variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `GROQ_API_KEY`: Your API key from [Groq](https://console.groq.com/). This is used for the AI code generation.
+- `PIXELLAB_API_KEY`: Your API key from [Pixel Lab](https://pixellab.ai/). This is used for generating the 16x16 textures.
+- `GH_TOKEN`: A GitHub Personal Access Token (PAT).
+  - **Where to get it**: Go to [GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens).
+  - **Permissions**: It needs the `workflow` scope to trigger and monitor GitHub Actions.
+- `GITHUB_REPO`: The full name of the repository where the app is deployed (e.g., `username/repo-name`). This is required for the Cloud Build feature to know where to trigger the workflow.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local Development
 
-## Learn More
+1. Clone the repository.
+2. Install dependencies: `npm install`.
+3. Create a `.env.local` file with the variables above.
+4. Run the development server: `npm run dev`.
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This app is ready to be deployed on [Vercel](https://vercel.com). Make sure to add the environment variables in the Vercel project settings.
