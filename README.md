@@ -15,12 +15,18 @@ To run this project, you need to set the following environment variables:
 - `GROQ_API_KEY`: Your API key from [Groq](https://console.groq.com/).
 - `PIXELLAB_API_KEY`: Your API key from [Pixel Lab](https://pixellab.ai/).
 - `GH_TOKEN`: A GitHub Personal Access Token (PAT).
-  - **Where to get it**: Go to [GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens).
   - **Required Scopes**:
-    - [x] **`workflow`**: (Update GitHub Action workflows) - This is **required** to trigger the build pipeline.
-    - [x] **`repo`**: (Full control of repositories) - Required to trigger and monitor actions.
+    - [x] **`workflow`**: (Update GitHub Action workflows)
+    - [x] **`repo`**: (Full control of repositories)
 - `GITHUB_REPO`: The full name of the repository (e.g., `username/repo-name`).
-- `GITHUB_BRANCH`: (Optional) The branch to use for triggering workflows. Defaults to `main`. Change to `master` if your repository uses that as the default branch.
+- `GITHUB_BRANCH`: (Optional) The branch name where the `.github/workflows/build-mod.yml` exists.
+  - **Note**: On Vercel, this is automatically detected. Only set this if you want to override it or are running locally.
+
+## Troubleshooting "No ref found"
+If you see an error like `No ref found for: some-branch`:
+1. Ensure the branch name in `GITHUB_BRANCH` matches exactly.
+2. Ensure you have pushed the `.github/workflows/build-mod.yml` file to that specific branch on GitHub.
+3. Ensure your `GH_TOKEN` has the required scopes.
 
 ## Local Development
 

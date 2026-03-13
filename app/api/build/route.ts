@@ -10,7 +10,9 @@ export async function POST(req: Request) {
 
   const repoFull = process.env.GITHUB_REPO || 'diddy62626/Minecraft-Fabric-1.21.11-Mod-Generator';
   const [owner, repo] = repoFull.split('/');
-  const ref = process.env.GITHUB_BRANCH || 'main';
+
+  // Try GITHUB_BRANCH first, then Vercel's automatic commit ref, then default to main
+  const ref = process.env.GITHUB_BRANCH || process.env.VERCEL_GIT_COMMIT_REF || 'main';
 
   const octokit = new Octokit({ auth: process.env.GH_TOKEN });
 
@@ -33,6 +35,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, owner, repo, ref });
   } catch (error: any) {
     console.error('GitHub Action trigger failed:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Include the attempted ref in the error message for easier debugging
+    return NextResponse.json({
+      error: `Build failed to trigger: ${error.message}`,
+      attemptedRef: ref,
+      repo: `${owner}/${repo}`
+    }, { status: 500 });
   }
 }
