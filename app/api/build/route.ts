@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { Octokit } from 'octokit';
-import { GRADLEW_B64, GRADLEW_BAT_B64, GRADLE_WRAPPER_JAR_B64 } from '@/utils/wrapper_binaries';
 import { FABRIC_TEMPLATES } from '@/utils/templates';
 
 export async function POST(req: Request) {
@@ -15,12 +14,11 @@ export async function POST(req: Request) {
 
   const ref = process.env.GITHUB_BRANCH || 'main';
 
-  // Ensure all Gradle Wrapper files are included
+  // OPTIMIZATION: We no longer send binary Gradle Wrapper files (gradlew, jar)
+  // because they exceed GitHub's 64KB input limit.
+  // The GitHub Action will now generate them automatically if missing.
   const fullModFiles = [
     ...modFiles,
-    { path: 'gradlew', content: GRADLEW_B64, encoding: 'base64' },
-    { path: 'gradlew.bat', content: GRADLEW_BAT_B64, encoding: 'base64' },
-    { path: 'gradle/wrapper/gradle-wrapper.jar', content: GRADLE_WRAPPER_JAR_B64, encoding: 'base64' },
     { path: 'gradle/wrapper/gradle-wrapper.properties', content: FABRIC_TEMPLATES.gradleWrapperProperties }
   ];
 
@@ -45,6 +43,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('GitHub Action trigger failed:', error);
 
+    // Fallback logic for branch detection
     if (error.message.includes('No ref found') && process.env.VERCEL_GIT_COMMIT_REF && ref !== process.env.VERCEL_GIT_COMMIT_REF) {
        try {
           const fallbackRef = process.env.VERCEL_GIT_COMMIT_REF;
@@ -65,16 +64,14 @@ export async function POST(req: Request) {
        } catch (fallbackError: any) {
           return NextResponse.json({
             error: `Build failed: ${fallbackError.message}`,
-            attemptedRef: process.env.VERCEL_GIT_COMMIT_REF,
-            suggestion: "Please set GITHUB_BRANCH to your correct branch name (e.g. 'main' or 'master')."
+            attemptedRef: process.env.VERCEL_GIT_COMMIT_REF
           }, { status: 500 });
        }
     }
 
     return NextResponse.json({
       error: `Build failed: ${error.message}`,
-      attemptedRef: ref,
-      suggestion: "Please set GITHUB_BRANCH to your correct branch name (e.g. 'main' or 'master')."
+      attemptedRef: ref
     }, { status: 500 });
   }
 }

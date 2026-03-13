@@ -44,21 +44,19 @@ jobs:
                       out.write(content)
           "
 
-      - name: Debug Files
-        run: ls -R
+      - name: Generate Gradle Wrapper
+        run: |
+          if [ ! -f gradlew ]; then
+            echo "Gradlew missing, generating fresh wrapper..."
+            gradle wrapper --gradle-version 8.10.2
+          fi
+          chmod +x gradlew
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build with Gradle
-        run: |
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-            ./gradlew build --stacktrace
-          else
-            echo "Error: gradlew not found. Attempting global gradle build..."
-            gradle build --stacktrace
-          fi
+        run: ./gradlew build --stacktrace
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
